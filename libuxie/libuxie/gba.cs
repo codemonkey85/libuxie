@@ -49,7 +49,7 @@ namespace LibUxie.GBA {
 		private Version type;
 		private byte[] order;
 		private byte[] unpacked;
-		private int saveIndex;
+		private uint saveIndex;
 
 		/* Unsafe a.k.a. "I got this." */
 		private static unsafe Footer *GetFooter(byte[] data, int offset, int block) {
@@ -161,6 +161,9 @@ namespace LibUxie.GBA {
 			int offset = GetTypeOffset(data, slot);
 			order = new byte[BLOCK_COUNT];
 			unpacked = new byte[UNPACKED_SIZE];
+
+			saveIndex = GetFooter(data, offset, 0)->saveIndex;
+
 			/* unpack blocks */
 			for(int i = 0; i < BLOCK_COUNT; ++i) {
 				//get the block footer
