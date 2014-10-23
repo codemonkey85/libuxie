@@ -119,7 +119,6 @@ namespace LibUxie.GBA {
 			if(type == Version.RubySapphire) {
 				return;
 			}
-
 			uint key = 0;
 			int offset = 0;
 			if(type == Version.Emerald) {
@@ -147,33 +146,32 @@ namespace LibUxie.GBA {
 			}
 		}
 
-		private unsafe void Unpack(byte[] data, SaveSlot slot) {
-			int offset = GetTypeOffset(data, slot);
-			order = new byte[BLOCK_COUNT];
-			unpacked = new byte[UNPACKED_SIZE];
-
-			saveIndex = GetFooter(data, offset, 0)->saveIndex;
-
-			/* unpack blocks */
-			for(int i = 0; i < BLOCK_COUNT; ++i) {
-				//get the block footer
-				byte sectionId = (byte)GetFooter(data, offset, i)->sectionId;
-				order[i] = sectionId;
-
-				Array.Copy(
-					data, offset + i * BLOCK_LENGTH,
-					unpacked, sectionId * UNPACKED_BLOCK_LENGTH,
-					UNPACKED_BLOCK_LENGTH);
-			}
-			type = DetectVersion();
-			Crypt();
-		}
-
 		public bool Load(byte[] data, SaveSlot slot) {
 			if(!IsValid(data)) {
 				return false;
 			}
-			Unpack(data, slot);
+			int offset = GetTypeOffset(data, slot);
+			order = new byte[BLOCK_COUNT];
+			unpacked = new byte[UNPACKED_SIZE];
+
+			unsafe {
+				saveIndex = GetFooter(data, offset, 0)->saveIndex;
+			}
+
+			/* unpack blocks */
+			for(int i = 0; i < BLOCK_COUNT; ++i) {
+				//get the block footer
+				unsafe {
+					order[i] = (byte)GetFooter(data, offset, i)->sectionId;
+				}
+
+				Array.Copy(
+					data, offset + i * BLOCK_LENGTH,
+					unpacked, order[i] * UNPACKED_BLOCK_LENGTH,
+					UNPACKED_BLOCK_LENGTH);
+			}
+			type = DetectVersion();
+			Crypt();
 
 			return true;
 		}
