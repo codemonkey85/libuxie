@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace libuxie {
+﻿namespace LibUxie {
     namespace GBA {
-
+		
     }
     namespace NDS {
 
