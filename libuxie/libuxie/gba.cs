@@ -2,13 +2,8 @@
 using System.Runtime.InteropServices;
 
 namespace LibUxie.GBA {
-
-	public enum Version {
-		Unknown, RubySapphire, Emerald, FireRedLeafGreen
-	};
-
 	[StructLayout(LayoutKind.Sequential, Pack=1)]
-	unsafe struct Footer {
+	struct Footer {
 		public ushort sectionId;
 		public ushort checksum;
 		public uint mark;
@@ -20,6 +15,13 @@ namespace LibUxie.GBA {
 		public ushort index;
 		public ushort amount;
 	}
+
+	public enum Version {
+		Unknown,
+		RubySapphire,
+		Emerald,
+		FireRedLeafGreen
+	};
 
 	public enum SaveSlot {
 		Main,
@@ -43,8 +45,12 @@ namespace LibUxie.GBA {
 
 		private const int RSE_STORAGE = UNPACKED_BLOCK_LENGTH + 0x490;
 		private const int FRLG_STORAGE = UNPACKED_BLOCK_LENGTH + 0x290;
-		private const int RS_FRLG_ITEM_COUNT = 216;
+		private const int RS_ITEM_COUNT = 216;
+		private const int FRLG_ITEM_COUNT = 216;
 		private const int E_ITEM_COUNT = 236;
+
+		private const int RSE_PC_ITEM_COUNT = 50;
+		private const int FRLG_PC_ITEM_COUNT = 30;
 
 		private Version type;
 		private byte[] order;
@@ -59,27 +65,16 @@ namespace LibUxie.GBA {
 			}
 		}
 
-		private static int GetStorageOffset(Version type) {
-			if(type == Version.RubySapphire || type == Version.Emerald) {
-				return RSE_STORAGE;
-			}
-			if(type == Version.FireRedLeafGreen) {
-				return FRLG_STORAGE;
-			}
-			return 0;
-		}
-
 		private static unsafe int GetTypeOffset(byte[] data, SaveSlot slot) {
-			Footer *a = GetFooter(data, 0, 0);
-			Footer *b = GetFooter(data, SAVE_SECTION, 0);
-
+			uint a = GetFooter(data, 0, 0)->saveIndex;
+			uint b = GetFooter(data, SAVE_SECTION, 0)->saveIndex;
 			if(slot == SaveSlot.Main) {
-				if(b->saveIndex > a->saveIndex) {
+				if(b > a) {
 					return SAVE_SECTION;
 				}
 				return 0;
 			}
-			if(a->saveIndex > b->saveIndex) {
+			if(a > b) {
 				return SAVE_SECTION;
 			}
 			return 0;
@@ -89,8 +84,8 @@ namespace LibUxie.GBA {
 			if(data.Length != PACKED_SIZE) {
 				return false;
 			}
-			Footer *footer = GetFooter(data, 0, 0);
-			if(footer->mark != FOOTER_MARK) {
+			uint mark = GetFooter(data, 0, 0)->mark;
+			if(mark != FOOTER_MARK) {
 				return false;
 			}
 			return true;
@@ -119,13 +114,6 @@ namespace LibUxie.GBA {
 			return Version.Unknown;
 		}
 
-		private unsafe Item *GetItem(int index) {
-			int offset = GetStorageOffset(type) + index * 4 + 8;
-			fixed(byte* ptr = &unpacked[offset]) {
-				return (Item*)ptr;
-			}
-		}
-
 		private unsafe void Crypt() {
 			//No (working) encryption in Ruby and Sapphire
 			if(type == Version.RubySapphire) {
@@ -136,19 +124,21 @@ namespace LibUxie.GBA {
 			int offset = 0;
 			if(type == Version.Emerald) {
 				key = BitConverter.ToUInt32(unpacked, RSE_SECKEY_OFFSET);
-				offset = GetStorageOffset(type);
+				offset = RSE_STORAGE;
 				//crypt item data, skip the PC data (not encrypted)
-				for(int i = 50; i < E_ITEM_COUNT; ++i) {
-					Item* item = GetItem(i);
-					item->amount ^= (ushort)key;
+				for(int i = RSE_PC_ITEM_COUNT; i < E_ITEM_COUNT; ++i) {
+					fixed(byte* ptr = &unpacked[offset + i * 4 + 8]) {
+						((Item*)ptr)->amount ^= (ushort)key;
+					}
 				}
 			} else if(type == Version.FireRedLeafGreen) {
 				key = BitConverter.ToUInt32(unpacked, FRLG_SECKEY_OFFSET);
-				offset = GetStorageOffset(type);
+				offset = FRLG_STORAGE;
 				//crypt item data, skip the PC data (not encrypted)
-				for(int i = 30; i < RS_FRLG_ITEM_COUNT; ++i) {
-					Item* item = GetItem(i);
-					item->amount ^= (ushort)key;
+				for(int i = FRLG_PC_ITEM_COUNT; i < FRLG_ITEM_COUNT; ++i) {
+					fixed(byte* ptr = &unpacked[offset + i * 4 + 8]) {
+						((Item*)ptr)->amount ^= (ushort)key;
+					}
 				}
 			}
 			fixed(byte *cash = &unpacked[offset]) {
@@ -167,12 +157,12 @@ namespace LibUxie.GBA {
 			/* unpack blocks */
 			for(int i = 0; i < BLOCK_COUNT; ++i) {
 				//get the block footer
-				Footer *footer = GetFooter(data, offset, i);
-				order[i] = (byte)footer->sectionId;
+				byte sectionId = (byte)GetFooter(data, offset, i)->sectionId;
+				order[i] = sectionId;
 
 				Array.Copy(
 					data, offset + i * BLOCK_LENGTH,
-					unpacked, footer->sectionId * UNPACKED_BLOCK_LENGTH,
+					unpacked, sectionId * UNPACKED_BLOCK_LENGTH,
 					UNPACKED_BLOCK_LENGTH);
 			}
 			type = DetectVersion();
@@ -191,6 +181,9 @@ namespace LibUxie.GBA {
 		public Version Version {
 			get {
 				return type;
+			}
+			set {
+				type = value;
 			}
 		}
 	}
