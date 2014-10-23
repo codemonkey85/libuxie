@@ -148,6 +148,7 @@ namespace LibUxie.GBA {
 
 		public bool Load(byte[] data, SaveSlot slot) {
 			if(!IsValid(data)) {
+				type = Version.Unknown;
 				return false;
 			}
 			int offset = GetTypeOffset(data, slot);
