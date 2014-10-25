@@ -86,25 +86,35 @@ namespace LibUxie.GBA {
 				return Version.Unknown;
 			}
 
-			/* These are all in the first block. So no need to unpack first. */
+			/* None of these cross a block boundry so no need to unpack. */
 			const int RSE_SECKEY2_OFFSET = 0x1F4;
 			const int FRLG_SECKEY2_OFFSET = 0xF20;
 
-			/* FireRed/LeafGreen */
-			if(BitConverter.ToInt32(data, FRLG_SECKEY_OFFSET)
-			== BitConverter.ToInt32(data, FRLG_SECKEY2_OFFSET)) {
-				return Version.FireRedLeafGreen;
-			} else
-			/* Emerald */
-				if(BitConverter.ToInt32(data, RSE_SECKEY_OFFSET)
-			== BitConverter.ToInt32(data, RSE_SECKEY2_OFFSET)) {
-				return Version.Emerald;
+			/* Find the first block */
+			int offset = 0;
+			for(int i = 0; i < BLOCK_COUNT; ++i) {
+				if(GetFooter(data, 0, i)->sectionId == 0) {
+					offset = BLOCK_LENGTH * i;
+					break;
+				}
 			}
+
 			/* Ruby/Sapphire */
-			if(BitConverter.ToInt32(data, RSE_SECKEY_OFFSET) == 0
-			&& BitConverter.ToInt32(data, RSE_SECKEY2_OFFSET) == 0) {
+			if(BitConverter.ToInt32(data, offset + RSE_SECKEY_OFFSET) == 0
+			&& BitConverter.ToInt32(data, offset + RSE_SECKEY2_OFFSET) == 0) {
 				return Version.RubySapphire;
 			}
+			/* Emerald */
+			if(BitConverter.ToInt32(data, offset + RSE_SECKEY_OFFSET)
+			== BitConverter.ToInt32(data, offset + RSE_SECKEY2_OFFSET)) {
+				return Version.Emerald;
+			}
+			/* FireRed/LeafGreen */
+			if(BitConverter.ToInt32(data, offset + FRLG_SECKEY_OFFSET)
+			== BitConverter.ToInt32(data, offset + FRLG_SECKEY2_OFFSET)) {
+				return Version.FireRedLeafGreen;
+			}
+			
 
 			return Version.Unknown;
 		}
