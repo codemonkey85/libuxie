@@ -205,7 +205,9 @@ namespace LibUxie.DSI {
 			if(v != Version.Unknown) {
 				//TODO maybe copy this.
 				savdata = data;
+				return true;
 			}
+			return false;
 		}
 
 		public Version Version {
