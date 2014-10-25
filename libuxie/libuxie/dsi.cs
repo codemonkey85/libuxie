@@ -182,21 +182,18 @@ namespace LibUxie.DSI {
 		private Version type;
 		private byte[] savdata;
 
-		private unsafe bool IsValid(byte[] data) {
+		private static Version DetectVersion(byte[] data) {
 			if(data.Length != SAV_SIZE) {
-				return false;
+				return Version.Unknown;
 			}
-			return true;
-		}
 
-		private Version DetectVersion() {
 			const int BW_MARK_OFFSET = 0x23F94;
 			const int B2W2_MARK_OFFSET = 0x25F9C;
 			const uint MARK =  0x31053527;
 
-			if(BitConverter.ToUInt32(savdata, BW_MARK_OFFSET) == MARK) {
+			if(BitConverter.ToUInt32(data, BW_MARK_OFFSET) == MARK) {
 				return Version.BlackWhite;
-			} else if(BitConverter.ToUInt32(savdata, B2W2_MARK_OFFSET) == MARK) {
+			} else if(BitConverter.ToUInt32(data, B2W2_MARK_OFFSET) == MARK) {
 				return Version.Black2White2;
 			}
 
@@ -204,17 +201,10 @@ namespace LibUxie.DSI {
 		}
 
 		public bool Load(byte[] data) {
-			try {
-				if(!IsValid(data)) {
-					type = Version.Unknown;
-					return false;
-				}
+			Version v = DetectVersion(data);
+			if(v != Version.Unknown) {
+				//TODO maybe copy this.
 				savdata = data;
-				type = DetectVersion();
-				return true;
-			} catch(Exception) {
-				// Do better error handling
-				return false;
 			}
 		}
 
