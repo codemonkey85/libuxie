@@ -39,7 +39,7 @@
 			public static ushort CRC16(byte[] data, int start, int length) {
 				ushort sum = 0xFFFF;
 				for(int i = start; i < start + length; ++i) {
-					sum = (ushort)(crc16[b ^ (sum >> 8)] ^ (sum << 8));
+					sum = (ushort)(crc16[data[i] ^ (sum >> 8)] ^ (sum << 8));
 				}
 				return sum;
 			}
