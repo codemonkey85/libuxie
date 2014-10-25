@@ -116,9 +116,10 @@ namespace LibUxie.DSI {
 			const int B2W2_MARK_OFFSET = 0x25F9C;
 			const uint MARK =  0x31053527;
 
-			if(BitConverter.ToUInt32(data, BW_MARK_OFFSET) == MARK) {
+			if(MARK == BitConverter.ToUInt32(data, BW_MARK_OFFSET)) {
 				return Version.BlackWhite;
-			} else if(BitConverter.ToUInt32(data, B2W2_MARK_OFFSET) == MARK) {
+			}
+			if(MARK == BitConverter.ToUInt32(data, B2W2_MARK_OFFSET)) {
 				return Version.Black2White2;
 			}
 
@@ -126,8 +127,8 @@ namespace LibUxie.DSI {
 		}
 
 		public bool Load(byte[] data) {
-			Version v = DetectVersion(data);
-			if(v != Version.Unknown) {
+			type = DetectVersion(data);
+			if(type != Version.Unknown) {
 				//TODO maybe copy this.
 				savdata = data;
 				return true;
