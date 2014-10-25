@@ -2,18 +2,6 @@
 using System.Runtime.InteropServices;
 
 namespace LibUxie.DSI {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    struct Footer {
-        public ushort sectionId;
-        public ushort checksum;
-        public uint mark;
-        public uint saveIndex;
-    }
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    struct Item {
-        public ushort index;
-        public ushort amount;
-    }
     public enum Version {
         Unknown,
         BlackWhite,
